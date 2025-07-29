@@ -1,0 +1,77 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.background_image {
+  height: 100vh; /* Full viewport height */
+  width: 100%;
+  background-image: url("../images/poortorich.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  /* align-items: center; */
+
+  justify-content: center;
+}
+/* .login_main_page {
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+} */
+.login_welcome_content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+.getotp_labe {
+  color: white;
+  font-weight: 600;
+}
+.mobileNumberInput {
+  border-color: lightslategrey;
+}
+.mobileNumberInput:focus {
+  border: 1px solid #555;
+}
+
+.login_form {
+  opacity: 1;
+}
+
+.login_form {
+  background-color: rgba(0, 0, 0, 0.5);
+  margin: auto auto;
+  padding: 40px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px #000;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 500px;
+  height: 350px;
+}
+.login_form:before {
+  background-image: url("../images/poortorich.png");
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: -1;
+  display: block;
+  filter: blur(2px);
+}
