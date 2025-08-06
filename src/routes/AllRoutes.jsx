@@ -9,6 +9,7 @@ import PageTransitionWrapper from "../components/PageTransitionWrapper";
 import Districts from "../components/superAdmin/Districts";
 import Panchayat from "../components/superAdmin/Panchayat";
 import Users from "../components/superAdmin/Users";
+import { User } from "lucide-react";
 export default function AllRoutes() {
   return (
     <ProtectedRoute>
@@ -26,6 +27,7 @@ function RoleBasedRoutes() {
   };
 
   let userRole = userDetails?.result?.role?.roleName?.toLowerCase(); // normalize
+
   userRole = roleMap[userRole] || userRole;
 
   const roleBasedRoutes = {

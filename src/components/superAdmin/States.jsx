@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "../../assets/styles/States.css";
 import PageTransitionWrapper from "../PageTransitionWrapper";
 import { motion, AnimatePresence } from "framer-motion";
+import SuperAdminService from "../../service/SuperAdminService";
 const dummyData = [
   {
     stateCode: "TS01",
@@ -285,13 +286,20 @@ const dummyData = [
     joined: "2023-08-05",
   },
 ];
-
+import { Upload } from "lucide-react";
+import { AddStateValidation } from "../formValidation/AddStateValidation";
+import { useTranslation } from "react-i18next";
+import { changeLanguageByState } from "../../utils/languageHelper";
 export default function States() {
+  const { t } = useTranslation();
+  const [selectedState, setSelectedState] = useState("");
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [selectedStateCode, setSelectedStateCode] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const openModal = () => setIsOpen(true);
-  const closeModal = () => setIsOpen(false);
+  const [base64File, setBase64File] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [states, setStates] = useState([]);
   const rowsPerPage = 10;
   const pagesToShow = 2;
 
@@ -306,11 +314,45 @@ export default function States() {
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
-
+  const [formData, setFormData] = useState({});
+  const [ststeCodedisible, setststeCodedisible] = useState(false);
   const [paginationStart, setPaginationStart] = useState(1);
-
+  const [values, setValues] = useState({
+    stateName: "",
+    stateCode: "",
+    isActive: "",
+    StateAdminName: "",
+    phoneNumer: "",
+    email: "",
+    gender: "",
+    pincode: "",
+    language: "",
+    id: "",
+  });
+  const [errors, setErrors] = useState({
+    stateName: "",
+    stateCode: "",
+    isActive: "",
+    StateAdminName: "",
+    phoneNumer: "",
+    gender: "",
+    pincode: "",
+    language: "",
+  });
   const goToPage = (page) => {
     setCurrentPage(page);
+  };
+
+  useEffect(() => {
+    FetchData();
+  }, []);
+  const FetchData = async () => {
+    var response = await SuperAdminService.GetAllStates();
+    setStates(response.item);
+  };
+  const inputOnChange1 = (e) => {
+    debugger;
+    setSelectedState(e.target.value);
   };
 
   const goNextPages = () => {
@@ -321,7 +363,14 @@ export default function States() {
       setCurrentPage(nextStart);
     }
   };
+  const openModal = () => {
+    setIsOpen(true);
+  };
 
+  const closeModal = () => {
+    setIsOpen(false);
+    setValues({});
+  };
   const goPrevPages = () => {
     const prevStart = paginationStart - pagesToShow;
     if (prevStart >= 1) {
@@ -334,6 +383,91 @@ export default function States() {
     { length: pagesToShow },
     (_, i) => paginationStart + i
   ).filter((page) => page <= totalPages);
+  const inputOnChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "stateName") {
+      const selectedStateObj = states.find((s) => s.stateCode === value);
+      const selectedStateName = selectedStateObj?.stateName || "";
+      const stateid = selectedStateObj?.id || "";
+      setSelectedStateCode(value);
+      setststeCodedisible(true);
+      setValues({
+        ...values,
+        stateName: selectedStateName,
+        stateCode: value,
+        id: stateid,
+      });
+      if (selectedStateName) {
+        changeLanguageByState(selectedStateName);
+      }
+    } else {
+      setValues({
+        ...values,
+        [name]: value,
+      });
+    }
+    setErrors({
+      ...errors,
+      [name]: AddStateValidation(name, value),
+    });
+  };
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result.split(",")[1]; // Remove `data:image/png;base64,`
+      setFormData({
+        ...formData,
+        stateLogoBase64: base64,
+        stateLogoFileName: file.name,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+  const SaveStateForm = () => {
+    const newErrors = {
+      stateName: AddStateValidation("stateName", values.stateName),
+
+      StateAdminName: AddStateValidation(
+        "StateAdminName",
+        values.StateAdminName
+      ),
+      phoneNumer: AddStateValidation("phoneNumer", values.phoneNumer),
+      isActive: AddStateValidation("isActive", values.isActive),
+      gender: AddStateValidation("gender", values.gender),
+      pincode: AddStateValidation("pincode", values.pincode),
+      language: AddStateValidation("language", values.language),
+    };
+    setErrors(newErrors);
+    const isValid = Object.values(newErrors).every((error) => error === "");
+    if (isValid) {
+      const requestData = {
+        state: {
+          stateName: values.stateName,
+          stateCode: values.stateCode,
+          isActive: true,
+          stateLogoBase64: formData.stateLogoBase64,
+          stateLogoFileName: formData.stateLogoFileName,
+          id: values.id,
+        },
+        user: {
+          fullName: values.StateAdminName,
+          phoneNumber: values.phoneNumer,
+          email: values.email,
+          gender: values.gender,
+          pinCode: values.pincode,
+          languagePreference: values.language,
+          Address: "",
+          VillageName: "",
+          PasswordHash: "",
+          AadhaarNumber: "",
+          stateId: values.id,
+        },
+      };
+      var result = SuperAdminService.AddState(requestData);
+    }
+  };
 
   return (
     <div>
@@ -426,147 +560,348 @@ export default function States() {
         </div>
         <AnimatePresence>
           {isOpen && (
-            // <motion.div
-            //   className="modal-overlay"
-            //   initial={{ opacity: 0 }}
-            //   animate={{ opacity: 1 }}
-            //   exit={{ opacity: 0 }}
-            // >
-            //   <motion.div
-            //     className="modal-box"
-            //     initial={{ scale: 0.8, opacity: 0 }}
-            //     animate={{ scale: 1, opacity: 1 }}
-            //     exit={{ scale: 0.8, opacity: 0 }}
-            //     transition={{ type: "spring", duration: 0.4 }}
-            //   >
-            //     <span>Add State</span>
-            //     <div className="modal-header">
-            //       <button className="close-btn" onClick={closeModal}>
-            //         &times;
-            //       </button>
-            //     </div>
-
-            //     <div className="modal-body">
-            //       <div
-            //         className=" "
-            //         style={{
-            //           display: "flex",
-            //           alignItems: "center",
-            //           justifyContent: "space-between",
-            //         }}
-            //       >
-            //         <div className="">
-            //           <input type="text" className="form-control" />
-            //         </div>
-            //         <div className="">
-            //           <label>StateCode</label>
-            //           <input type="text" className="form-control" />
-            //         </div>
-            //         <div className="">
-            //           <label>AdminName</label>
-            //           <input type="text" className="form-control" />
-            //         </div>
-            //       </div>
-            //     </div>
-
-            //     <div className="modal-footer">
-            //       <button className="btn btn-secondary" onClick={closeModal}>
-            //         Close
-            //       </button>
-            //     </div>
-            //   </motion.div>
-            // </motion.div>
-            <motion.div
-              className="modal-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <motion.div
-                className="modal-box"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={{ type: "spring", duration: 0.4 }}
-              >
-                <div className="modal-header d-flex align-items-center justify-content-between align-items-center">
-                  <h5 className="modal-title">Add State</h5>
-                  <button
-                    className="close-btn btn btn-sm btn-danger"
-                    onClick={closeModal}
+            <div>
+              <PageTransitionWrapper>
+                <motion.div
+                  className="modal-overlay"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <motion.div
+                    className="modal-box"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    transition={{ type: "spring", duration: 0.4 }}
                   >
+                    <div className="modal-header d-flex align-items-center justify-content-between align-items-center">
+                      <span></span>
+                      <h5 className="modal-title">Add State</h5>
+                      {/* <button className="" onClick={closeModal}>
                     &times;
-                  </button>
-                </div>
+                  </button> */}
+                      <i
+                        className="bi bi-x-lg close_icon me-2"
+                        onClick={closeModal}
+                      ></i>
+                    </div>
 
-                <div className="modal-body">
-                  <form>
-                    <div className="row">
-                      <div className="mb-3 col-4">
-                        <label className="form-label">State Name</label>
-                        <select className="form-select">
-                          <option>Select State</option>
-                          <option>Andhra Pradesh</option>
-                          <option>Telangana</option>
-                          <option>Karnataka</option>
-                          <option>Maharashtra</option>
-                          <option>Tamil Nadu</option>
-                          {/* Add more states as needed */}
-                        </select>
-                      </div>
+                    <div className="modal-body">
+                      <div className="row form_row">
+                        <div className="floating-label-select col-4">
+                          <select
+                            name="stateName"
+                            value={selectedStateCode} // stores stateCode
+                            onChange={inputOnChange}
+                            required
+                          >
+                            <option value="">Please select State</option>
+                            {states.map((state) => (
+                              <option
+                                key={state.stateCode}
+                                value={state.stateCode}
+                              >
+                                {t(state.stateName)}
+                              </option>
+                            ))}
+                          </select>
+                          <label>Select State*</label>
+                          {errors.stateCode && (
+                            <span
+                              className="error ms-1"
+                              style={{ fontSize: "12px", color: "red" }}
+                            >
+                              {errors.stateCode}
+                            </span>
+                          )}
+                        </div>
+                        <div className="floating-label-input col-4">
+                          <input
+                            type="tel"
+                            id=""
+                            name="stateCode"
+                            placeholder=" "
+                            onChange={inputOnChange}
+                            value={selectedStateCode}
+                            disabled={ststeCodedisible}
+                          />
+                          <label>StateCode</label>
+                        </div>
+                        <div className="floating-label-input col-4">
+                          <input
+                            type="tel"
+                            id=""
+                            name="StateAdminName"
+                            placeholder=""
+                            onChange={inputOnChange}
+                          />
 
-                      <div className="mb-3 col-4">
-                        <label className="form-label">State Code</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="Enter State Code"
-                        />
+                          <label>State Admin Name</label>
+                          {errors.StateAdminName && (
+                            <span
+                              className="error ms-1"
+                              style={{ fontSize: "12px", color: "red" }}
+                            >
+                              {errors.StateAdminName}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="mb-3 col-4">
-                        <label className="form-label">Mobile Number</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="Enter Mobile Number"
-                        />
+                      <div className="row ">
+                        <div className="col-8">
+                          <div className="row form_row">
+                            <div className="floating-label-select col-6">
+                              <select
+                                id="state"
+                                name="isActive"
+                                onChange={inputOnChange}
+                                required
+                              >
+                                <option value="">Select Status</option>
+                                <option key="Active" value="Active">
+                                  Active
+                                </option>
+                                <option key="Inactive" value="Inactive">
+                                  Inactive
+                                </option>
+                              </select>
+
+                              <label>Status*</label>
+                              {errors.isActive && (
+                                <span
+                                  className="error ms-1"
+                                  style={{ fontSize: "12px", color: "red" }}
+                                >
+                                  {errors.isActive}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="floating-label-input col-6">
+                              <input
+                                type="tel"
+                                onChange={inputOnChange}
+                                name="email"
+                                placeholder=" "
+                              />
+                              <label>Email*</label>
+                            </div>
+                          </div>
+                          <div className=" row form_row">
+                            <div className="floating-label-input col-6">
+                              <input
+                                onChange={inputOnChange}
+                                type="tel"
+                                name="phoneNumer"
+                              />
+
+                              <label>MobileNumber</label>
+                              {errors.phoneNumer && (
+                                <span
+                                  className="error ms-1"
+                                  style={{ fontSize: "12px", color: "red" }}
+                                >
+                                  {errors.phoneNumer}
+                                </span>
+                              )}
+                            </div>
+                            <div className="floating-label-select col-6">
+                              <select
+                                name="language"
+                                onChange={inputOnChange}
+                                required
+                              >
+                                <option value="">Please select language</option>
+                                <option value="hi">Hindi</option>
+                                <option value="en">English</option>
+                                <option value="te">Telugu</option>
+                              </select>
+
+                              <label>Language*</label>
+                              {errors.language && (
+                                <span
+                                  className="error ms-1"
+                                  style={{ fontSize: "12px", color: "red" }}
+                                >
+                                  {errors.language}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="col-4">
+                          <div
+                            className="upload-box"
+                            style={{ cursor: "pointer" }}
+                          >
+                            <label
+                              className="upload-label"
+                              htmlFor="state-logo-upload"
+                            >
+                              <Upload className="upload-icon" />
+                              <span>UPLOAD STATE LOGO</span>
+                            </label>
+                            <input
+                              type="file"
+                              id="state-logo-upload"
+                              accept="image/*"
+                              hidden
+                              style={{ cursor: "pointer" }}
+                              onChange={handleFileChange}
+                            />
+                            {/* <label className="upload-label">
+                              <Upload className="upload-icon" />
+                              <span>UPLOAD STATE LOGO</span>
+                            </label>
+                            <input
+                              type="file"
+                              id="state-logo-upload"
+                              hidden
+                              style={{ cursor: "pointer" }}
+                            /> */}
+                            {/* <label
+                              className="upload-label"
+                              htmlFor="state-logo-upload"
+                              style={{ cursor: "pointer" }}
+                            >
+                              <Upload
+                                className="upload-icon"
+                                style={{ cursor: "pointer" }}
+                              />
+                              <span style={{ cursor: "pointer" }}>
+                                UPLOAD STATE LOGO
+                              </span>
+                            </label>
+                            <input
+                              type="file"
+                              id="state-logo-upload"
+                              onChange={handleFileChange}
+                              style={{ cursor: "pointer" }}
+                            /> */}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="row form_row">
+                        <div className="floating-label-select col-4">
+                          <select
+                            name="gender"
+                            onChange={inputOnChange}
+                            required
+                          >
+                            <option value="">Please select Gender</option>
+                            <option key="Male" value="Male">
+                              Male
+                            </option>
+                            <option key="Female" value="Female">
+                              Female
+                            </option>
+                            <option key="Others" value="Others">
+                              Others
+                            </option>
+                          </select>
+
+                          <label>Gender*</label>
+                          {errors.gender && (
+                            <span
+                              className="error ms-1"
+                              style={{ fontSize: "12px", color: "red" }}
+                            >
+                              {errors.gender}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="floating-label-input col-4">
+                          <input
+                            type="tel"
+                            id=""
+                            name="pincode"
+                            placeholder=""
+                            onChange={inputOnChange}
+                          />
+                          <label>PinCode*</label>
+                          {errors.pincode && (
+                            <span
+                              className="error ms-1"
+                              style={{ fontSize: "12px", color: "red" }}
+                            >
+                              {errors.pincode}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="row">
-                      <div className="mb-3 col-4">
-                        <label className="form-label">State Admin Name</label>
+                    <div className="modal-footer">
+                      <div className="">
+                        <div
+                          className=""
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "end",
+                          }}
+                        >
+                          <button
+                            className="me-3 cancel_button"
+                            style={{ color: "" }}
+                            onClick={closeModal}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            className="add_button me-3"
+                            onClick={SaveStateForm}
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              </PageTransitionWrapper>
+              {showOtpModal && (
+                <div className="modal show d-block" tabIndex="-1">
+                  <div className="modal-dialog modal-sm">
+                    <div className="modal-content">
+                      <div className="modal-header">
+                        <h5 className="modal-title">Verify OTP</h5>
+                        <button
+                          type="button"
+                          className="btn-close"
+                          onClick={() => setShowOtpModal(false)}
+                        ></button>
+                      </div>
+                      <div className="modal-body">
                         <input
                           type="text"
                           className="form-control"
-                          placeholder="Enter Admin Name"
+                          placeholder="Enter OTP"
+                          value={otp}
+                          onChange={(e) => setOtp(e.target.value)}
                         />
                       </div>
-
-                      <div className="mb-3 col-4">
-                        <label className="form-label">Created Date</label>
-                        <input type="date" className="form-control" />
-                      </div>
-                      <div className="mb-3 col-4">
-                        <label className="form-label">Email</label>
-                        <input
-                          type="email"
-                          className="form-control"
-                          placeholder="Enter Email"
-                        />
+                      <div className="modal-footer">
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => setShowOtpModal(false)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="btn btn-primary"
+                          onClick={handleVerifyOtp}
+                        >
+                          Verify
+                        </button>
                       </div>
                     </div>
-                  </form>
+                  </div>
                 </div>
-
-                <div className="modal-footer">
-                  <button className="btn btn-secondary" onClick={closeModal}>
-                    Close
-                  </button>
-                  <button className="btn btn-primary">Save</button>
-                </div>
-              </motion.div>
-            </motion.div>
+              )}
+            </div>
           )}
         </AnimatePresence>
       </PageTransitionWrapper>

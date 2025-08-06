@@ -8,10 +8,10 @@ const createAxiosInstance = (baseURL) => {
 
   api.interceptors.request.use(
     (config) => {
-      const sessionData = localStorage.getItem("sessionData");
+      const sessionData = localStorage.getItem("userData");
       const userDetails = sessionData ? JSON.parse(sessionData) : null;
-
-      if (userDetails?.token) {
+      console.log(userDetails.result, "userData ");
+      if (userDetails.result?.token) {
         config.headers["Authorization"] = `Bearer ${userDetails.token}`;
       } else {
         console.warn("⚠️ No token found in sessionData");

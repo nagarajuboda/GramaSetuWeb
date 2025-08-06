@@ -58,7 +58,7 @@ body {
   left: 0;
   right: 0;
   width: 500px;
-  height: 350px;
+  height: 400px;
 }
 .login_form:before {
   background-image: url("../images/poortorich.png");

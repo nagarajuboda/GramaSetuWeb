@@ -6,19 +6,22 @@ import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import { Button } from "bootstrap";
+import { changeLanguageByState } from "../../utils/languageHelper";
 export default function Login() {
   const [phoneNumber, setphoneNumber] = useState({
     phoneNumber: "",
   });
+  const [phoneNumbererror, setphoneNumbererror] = useState({
+    phoneNumber: "",
+  });
+
   const [verifyOtpflag, setVerifyOtpflag] = useState(false);
   const [showResend, setShowResend] = useState(false);
   const [resendTimer, setResendTimer] = useState(30);
   const [otp, setotp] = useState({
     otp: "",
   });
-  const [phoneNumbererror, setphoneNumbererror] = useState({
-    phoneNumber: "",
-  });
+
   const navigate = useNavigate();
   const getOTP = async () => {
     const newErrors = {
@@ -71,10 +74,15 @@ export default function Login() {
       phoneNumber: phoneNumber.phoneNumber,
     };
     var result = await AuthService.FcnVerifyOtp(obj);
-    console.log(result);
     if (result.isSuccess) {
-      debugger;
+      // changeLanguageByState(result.item?.result?.user?.Gender);
       localStorage.setItem("userData", JSON.stringify(result.item));
+      localStorage.setItem(
+        "language",
+        result?.item?.result?.user?.languagePreference
+      );
+      //   var result1 = localStorage.getItem("language");
+      console.log(result?.item?.result?.user, "==========> result 1");
       if (result.item.result.role.roleName === "Super_Admin") {
         navigate("/dashboard/SuperAdminDashboard");
       } else {
@@ -127,7 +135,7 @@ export default function Login() {
 
         {verifyOtpflag == false && (
           <form>
-            <div className="login_form pt-3 card">
+            <div className="login_form pt-3 ">
               <div className="login_welcome_content">
                 <p style={{ fontSize: "20px", color: "white" }}>
                   Login with Mobile OTP
